@@ -8,15 +8,21 @@ _pool: Optional[asyncpg.Pool] = None
 async def get_pool() -> asyncpg.Pool:
     global _pool
     if _pool is None:
-        
-        _pool = await asyncpg.create_pool(
-            config.DATABASE_URL, min_size=1, max_size=10, statement_cache_size=0
-        )
+        try:
+            print("[DB] Creating connection pool...")
+            _pool = await asyncpg.create_pool(
+                config.DATABASE_URL, min_size=1, max_size=10, statement_cache_size=0
+            )
+            print("[DB] Database connection pool created.")
+        except Exception as exc:
+            print(f"[DB] Failed to create connection pool: {exc}")
+            raise
     return _pool
 
 async def create_tables() -> None:
     pool = await get_pool()
     async with pool.acquire() as conn:
+        print("[DB] Ensuring tables exist...")
         await conn.execute(
             """
             CREATE TABLE IF NOT EXISTS seasons (
@@ -51,6 +57,7 @@ async def create_tables() -> None:
             );
             """
         )
+        print("[DB] Tables ensured.")
 
 # Season
 

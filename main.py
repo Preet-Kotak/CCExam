@@ -36,6 +36,12 @@ class CCExaminerBot(commands.Bot):
 async def main() -> None:
     port=int(os.environ.get("PORT", 8080))
     start_http_server_sync(port)
+    print(f"[Main] HTTP server requested on port {port}")
+    # Diagnostic info (do not print secrets)
+    print(f"[Main] DISCORD_TOKEN set: {bool(os.environ.get('DISCORD_TOKEN'))}")
+    print(f"[Main] DATABASE_URL set: {bool(os.environ.get('DATABASE_URL'))}")
+    print(f"[Main] RENDER_URL set: {bool(os.environ.get('RENDER_URL'))}")
+    print(f"[Main] Python version: {os.sys.version.splitlines()[0]}")
     bot = CCExaminerBot()
     async with bot:
         print("[Bot] Starting bot...")
