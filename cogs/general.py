@@ -1,0 +1,133 @@
+import discord
+from discord import app_commands
+from discord.ext import commands
+import database
+import config
+from utils.formatting import build_show_score_embed, sort_districts
+
+class ScorePaginator(discord.ui.View):
+    def __init__(self, records: list, player: discord.Member | discord.User) -> None:
+        super().__init__(timeout=300)
+        
+        self.records = records
+        self.player = player
+        self.page = 0
+        page_btn = next((c for c in self.children if getattr(c, "custom_id", None) == "page_button"), None)
+        if page_btn:
+            page_btn.label = f"{len(self.records) - self.page}/{len(self.records)}"
+
+    def _build_embed(self) -> discord.Embed:
+        row = self.records[self.page]
+        import json
+
+        district_scores = (
+            row["district_scores"]
+            if isinstance(row["district_scores"], dict)
+            else json.loads(row["district_scores"])
+        )
+        districts: list[str] = sort_districts(list(row["districts"]))
+        return build_show_score_embed(
+            season_name=row["month"],
+            districts=districts,
+            district_scores=district_scores,
+            total_stars=row["total_stars"],
+            total_percent=row["total_percent"],
+            grade=row["grade"],
+            page=self.page + 1,
+            total_pages=len(self.records),
+            player_name=self.player.display_name if self.player is not None else None,
+            player_icon_url=(self.player.display_avatar.url if getattr(self.player, "display_avatar", None) is not None else None),
+        )
+    @discord.ui.button(label="⬅️Prev", style=discord.ButtonStyle.secondary)
+    async def prev_page(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        
+        if self.page < len(self.records) - 1:
+            self.page += 1
+        
+        page_btn = next((c for c in self.children if getattr(c, "custom_id", None) == "page_button"), None)
+        if page_btn:
+            page_btn.label = f"{len(self.records) - self.page}/{len(self.records)}"
+        await interaction.response.edit_message(embed=self._build_embed(), view=self)
+
+
+    @discord.ui.button(label="Page", style=discord.ButtonStyle.secondary, disabled=True, custom_id="page_button")
+    async def page_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        return
+
+    @discord.ui.button(label="Next➡️", style=discord.ButtonStyle.secondary)
+    async def next_page(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        if self.page > 0:
+            self.page -= 1
+        page_btn = next((c for c in self.children if getattr(c, "custom_id", None) == "page_button"), None)
+        if page_btn:
+            page_btn.label = f"{len(self.records) - self.page}/{len(self.records)}"
+        await interaction.response.edit_message(embed=self._build_embed(), view=self)
+
+
+class GeneralCog(commands.Cog):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
+
+    def _is_examiner(self, member: discord.Member) -> bool:
+        return any(r.id == config.CC_EXAMINER_ROLE_ID for r in member.roles)
+
+    @app_commands.command(name="show_score", description="Show all recorded scores for a player.")
+    @app_commands.describe(player="The player to look up")
+    async def show_score(
+        self, interaction: discord.Interaction, player: discord.Member
+    ) -> None:
+        await interaction.response.defer()
+        records = await database.get_player_all_scores(player.id)
+        if not records:
+            await interaction.followup.send(
+                f"No scores found for {player.mention}.", ephemeral=True
+            )
+            return
+
+        view = ScorePaginator(records, player)
+        embed = view._build_embed()
+        await interaction.followup.send(embed=embed, view=view, ephemeral=False)
+
+    @app_commands.command(name="help", description="List available commands.")
+    async def help_cmd(self, interaction: discord.Interaction) -> None:
+        is_examiner = (
+            isinstance(interaction.user, discord.Member)
+            and self._is_examiner(interaction.user)
+        )
+
+        embed = discord.Embed(title="CC Examiner Bot — Commands", color=discord.Color.blurple())
+
+        if is_examiner:
+            embed.add_field(
+                name="CC Examiner Commands",
+                value=(
+                    "`/start` — Start a new season and choose 5 districts\n"
+                    "`/add_link` — Add or replace a base link + screenshot for a district\n"
+                    "`/submit_score` — Submit a score for a player\n"
+                    "`/edit_score` — Edit an existing score for a player\n"
+                    "`/delete_score` — Delete a player's score from the current season\n"
+                    "`/show_bases` — Show all current base links and screenshots\n"
+                    "`/end_exam` — Close the current season\n"
+                    "`/delete_exam` — Delete an entire season and all its data\n"
+                ),
+                inline=False,
+            )
+
+        embed.add_field(
+            name="Everyone",
+            value=(
+                "`/show_score` — View all recorded scores for a player\n"
+                "`/help` — Show this help message\n"
+            ),
+            inline=False,
+        )
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(GeneralCog(bot))
