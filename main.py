@@ -38,7 +38,12 @@ async def main() -> None:
     start_http_server_sync(port)
     bot = CCExaminerBot()
     async with bot:
-        await bot.start(config.DISCORD_TOKEN)
+        print("[Bot] Starting bot...")
+        try:
+            await bot.start(config.DISCORD_TOKEN)
+        except Exception as exc:
+            print(f"[Bot] Failed to start: {exc}")
+            raise
         
 if __name__ == "__main__":
     asyncio.run(main())
