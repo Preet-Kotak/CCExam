@@ -76,7 +76,7 @@ class DistrictSelectView(discord.ui.View):
             if lb_channel is None:
                 lb_channel = await interaction.guild.fetch_channel(config.LEADERBOARD_CHANNEL_ID)
             embed = discord.Embed(
-                title=f"🏆 Season Leaderboard — {self.month}",
+                title=f"🏆 CC Exam Live Leaderboard | {self.month}",
                 description="_No scores submitted yet._",
                 color=discord.Color.gold(),
             )
@@ -400,7 +400,8 @@ class ExaminerCog(commands.Cog):
                     grade=totals["grade"],
                 )
                 result_msg = await results_channel.send(
-                    content=player.mention, embed=score_embed
+                    # content=player.mention, embed=score_embed
+                    embed=score_embed
                 )
                 await database.save_result_message_id(row["id"], result_msg.id)
 
@@ -408,7 +409,7 @@ class ExaminerCog(commands.Cog):
                 await self._trigger_leaderboard_update(season)
             except Exception as exc:
                 await inter.response.send_message(
-                    f"⚠️ Failed to post score or update leaderboard: {exc}",
+                    f"Failed to post score or update leaderboard: {exc}",
                     ephemeral=True,
                 )
                 return
