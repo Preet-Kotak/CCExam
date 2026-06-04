@@ -1,28 +1,34 @@
 import asyncpg
 import json
+import logging
 from typing import Optional
 import config
 
+log = logging.getLogger(__name__)
 _pool: Optional[asyncpg.Pool] = None
+
 
 async def get_pool() -> asyncpg.Pool:
     global _pool
     if _pool is None:
         try:
-            print("[DB] Creating connection pool...")
-            _pool = await asyncpg.create_pool(
-                config.DATABASE_URL, min_size=1, max_size=10, statement_cache_size=0
-            )
-            print("[DB] Database connection pool created.")
-        except Exception as exc:
-            print(f"[DB] Failed to create connection pool: {exc}")
+            _pool = await asyncpg.create_pool(config.DATABASE_URL)
+            log.info("Successfully connected to PostgreSQL (Supabase).")
+        except Exception as e:
+            log.error(f"Failed to connect to database: {e}")
             raise
     return _pool
+
+
+async def close_pool() -> None:
+    global _pool
+    if _pool:
+        await _pool.close()
+        log.info("Database connection closed.")
 
 async def create_tables() -> None:
     pool = await get_pool()
     async with pool.acquire() as conn:
-        print("[DB] Ensuring tables exist...")
         await conn.execute(
             """
             CREATE TABLE IF NOT EXISTS seasons (
@@ -57,7 +63,7 @@ async def create_tables() -> None:
             );
             """
         )
-        print("[DB] Tables ensured.")
+        log.info("Database tables initialized.")
 
 # Season
 
