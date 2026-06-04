@@ -33,14 +33,31 @@ class CCExaminerBot(commands.Bot):
         super().__init__(command_prefix="!", intents=intents)
 
     async def setup_hook(self) -> None:
-        await database.create_tables()
+        print("[Setup] Starting setup_hook...", flush=True)
+        try:
+            await database.create_tables()
+            print("[Setup] Database tables created", flush=True)
+        except Exception as e:
+            print(f"[Setup] Failed to create tables: {e}", flush=True)
+            traceback.print_exc()
+        
         for cog in COGS:
-            await self.load_extension(cog)
-            print(f"[Cog] Loaded {cog}")
-        guild = discord.Object(id=config.GUILD_ID)
-        self.tree.copy_global_to(guild=guild)
-        await self.tree.sync(guild=guild)
-        print(f"[Bot] Slash commands synced to guild {config.GUILD_ID}.")
+            try:
+                await self.load_extension(cog)
+                print(f"[Cog] Loaded {cog}", flush=True)
+            except Exception as e:
+                print(f"[Cog] Failed to load {cog}: {e}", flush=True)
+                traceback.print_exc()
+        
+        try:
+            guild = discord.Object(id=config.GUILD_ID)
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
+            print(f"[Bot] Slash commands synced to guild {config.GUILD_ID}.", flush=True)
+        except Exception as e:
+            print(f"[Bot] Failed to sync commands: {e}", flush=True)
+            traceback.print_exc()
+        
         asyncio.create_task(self_ping())
     
     async def on_ready(self) -> None:
