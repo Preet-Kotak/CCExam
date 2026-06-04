@@ -1,5 +1,4 @@
-﻿py-cord
+﻿discord.py>=2.3.0
 asyncpg
 aiohttp
 python-dotenv
-
