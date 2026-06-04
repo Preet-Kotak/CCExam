@@ -12,7 +12,7 @@ async def get_pool() -> asyncpg.Pool:
     global _pool
     if _pool is None:
         try:
-            _pool = await asyncpg.create_pool(config.DATABASE_URL)
+            _pool = await asyncpg.create_pool(config.DATABASE_URL, statement_cache_size=0)
             log.info("Successfully connected to PostgreSQL (Supabase).")
         except Exception as e:
             log.error(f"Failed to connect to database: {e}")
