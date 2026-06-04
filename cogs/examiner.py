@@ -216,8 +216,9 @@ class ExaminerCog(commands.Cog):
         # Update leaderboard title to reflect ended season
         lb_cog = self._get_leaderboard_cog()
         if lb_cog:
-            season["is_active"] = False
-            await lb_cog.update_leaderboard(season)
+            season_dict = dict(season)
+            season_dict["is_active"] = False
+            await lb_cog.update_leaderboard(season_dict)
 
         end_channel = interaction.guild.get_channel(config.END_SEASON_CHANNEL_ID)
         if end_channel is None:
