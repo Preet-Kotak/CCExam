@@ -47,7 +47,7 @@ def build_leaderboard_embed(
     guild: discord.Guild,
 ) -> discord.Embed:
     embed = discord.Embed(
-        title=f"🏆 Season Leaderboard — {season_name}",
+        title=f"🏆 CC Exam Live Leaderboard | {season_name}",
         color=discord.Color.gold(),
     )
 
