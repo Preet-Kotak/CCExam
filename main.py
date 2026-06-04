@@ -1,11 +1,24 @@
 import asyncio
 import os
+import sys
+import traceback
 import discord
 from discord.ext import commands
-import config
-import database
 
-from keep_alive import start_http_server_sync, self_ping
+try:
+    import config
+    import database
+except Exception as e:
+    print(f"[ERROR] Failed to import config or database: {e}", file=sys.stderr)
+    traceback.print_exc()
+    sys.exit(1)
+
+try:
+    from keep_alive import start_http_server_sync, self_ping
+except Exception as e:
+    print(f"[ERROR] Failed to import keep_alive: {e}", file=sys.stderr)
+    traceback.print_exc()
+    sys.exit(1)
 
 COGS = [
     "cogs.leaderboard",
@@ -52,4 +65,9 @@ async def main() -> None:
             raise
         
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        print(f"[FATAL ERROR] {e}", file=sys.stderr)
+        traceback.print_exc()
+        sys.exit(1)
