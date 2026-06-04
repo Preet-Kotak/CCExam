@@ -33,7 +33,7 @@ class LeaderboardCog(commands.Cog):
             return
 
         scores = await database.get_all_scores(season["id"])
-        embed = build_leaderboard_embed(season["month"], scores, channel.guild)
+        embed = build_leaderboard_embed(season["month"], scores, channel.guild, season["is_active"])
         await message.edit(embed=embed)
 
 

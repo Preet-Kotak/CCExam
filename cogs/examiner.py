@@ -40,7 +40,6 @@ class DistrictSelectView(discord.ui.View):
         self.add_item(select)
 
     async def _select_callback(self, interaction: discord.Interaction) -> None:
-        # store the selected district values (exactly 5 because of min/max)
         self.selections = interaction.data.get("values", [])
         await interaction.response.defer()
 
@@ -102,7 +101,7 @@ class DistrictSelectView(discord.ui.View):
                 return
         except Exception as exc:
             await interaction.followup.send(
-                f"⚠️ Failed to create season or leaderboard: {exc}",
+                f"Failed to create season or leaderboard: {exc}",
                 ephemeral=True,
             )
             return
@@ -213,6 +212,12 @@ class ExaminerCog(commands.Cog):
             return
 
         await database.end_season(season["id"])
+
+        # Update leaderboard title to reflect ended season
+        lb_cog = self._get_leaderboard_cog()
+        if lb_cog:
+            season["is_active"] = False
+            await lb_cog.update_leaderboard(season)
 
         end_channel = interaction.guild.get_channel(config.END_SEASON_CHANNEL_ID)
         if end_channel is None:

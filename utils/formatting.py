@@ -45,9 +45,11 @@ def build_leaderboard_embed(
     season_name: str,
     scores: list[dict],
     guild: discord.Guild,
+    is_active: bool = True,
 ) -> discord.Embed:
+    title_prefix = "🏆 CC Exam Live Leaderboard" if is_active else "🏆 CC Exam Leaderboard"
     embed = discord.Embed(
-        title=f"🏆 CC Exam Live Leaderboard | {season_name}",
+        title=f"{title_prefix} | {season_name}",
         color=discord.Color.gold(),
     )
 
@@ -65,7 +67,7 @@ def build_leaderboard_embed(
     lines = [""]
 
     for i, (row, mention) in enumerate(zip(scores, mentions), start=1):
-        rank_display = rank_emojis.get(i, f"{i}.")
+        rank_display = rank_emojis.get(i, f"#{i}")
         lines.append(
             f"{rank_display} {mention:<{max_mention_len}}  {row['grade']}"
         )
