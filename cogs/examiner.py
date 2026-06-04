@@ -406,8 +406,8 @@ class ExaminerCog(commands.Cog):
                     grade=totals["grade"],
                 )
                 result_msg = await results_channel.send(
-                    # content=player.mention, embed=score_embed
-                    embed=score_embed
+                    content=player.mention, embed=score_embed
+                    # embed=score_embed
                 )
                 await database.save_result_message_id(row["id"], result_msg.id)
 
