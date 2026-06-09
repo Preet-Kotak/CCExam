@@ -203,18 +203,12 @@ class GeneralCog(commands.Cog):
         for idx, entry in enumerate(leaderboard):
             player_name = None
             player_id = entry["player_id"]
-            if interaction.guild is not None:
-                member = interaction.guild.get_member(player_id)
-                if member is not None:
-                    player_name = member.display_name
-            if player_name is None:
-                user = await self.bot.fetch_user(player_id)
-                player_name = user.name
+    
 
             stars = int(entry["stars"])
             percent = int(entry["percent"])
             lines.append(
-                f"#{idx+1} <@{player_name}> - {stars}⭐ {percent}%"
+                f"#{idx+1} <@{player_id}> - {stars}⭐ {percent}%"
             )
 
         embed = discord.Embed(
