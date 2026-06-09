@@ -230,11 +230,16 @@ async def get_district_leaderboard(season_id: int, district_name: str) -> list[a
     pool = await get_pool()
     return await pool.fetch(
         """
-        SELECT player_id, district_scores->>$1
+        SELECT
+            player_id,
+            (district_scores -> $1 ->> 'stars') AS stars,
+            (district_scores -> $1 ->> 'percent') AS percent
         FROM scores
-        WHERE season_id = $2 AND (district_scores->>$1 IS NOT NULL)
+        WHERE season_id = $2
+          AND (district_scores -> $1 ->> 'stars') IS NOT NULL
         ORDER BY
-            (district_scores->>$1)::INT DESC,
+            (district_scores -> $1 ->> 'stars')::INT DESC,
+            (district_scores -> $1 ->> 'percent')::INT DESC,
             submitted_at ASC
         """,
         district_name,

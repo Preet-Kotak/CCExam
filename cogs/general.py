@@ -173,12 +173,27 @@ class GeneralCog(commands.Cog):
             )
             return
 
+        lines = []
+        for idx, entry in enumerate(leaderboard):
+            player_name = None
+            player_id = entry["player_id"]
+            if interaction.guild is not None:
+                member = interaction.guild.get_member(player_id)
+                if member is not None:
+                    player_name = member.display_name
+            if player_name is None:
+                user = await self.bot.fetch_user(player_id)
+                player_name = user.name
+
+            stars = int(entry["stars"])
+            percent = int(entry["percent"])
+            lines.append(
+                f"**{idx+1}. {player_name}** — {stars} stars ({percent}%)"
+            )
+
         embed = discord.Embed(
             title=f"{district} Leaderboard — {season_record['month']}",
-            description="\n".join(
-                f"**{idx+1}. {entry['player_name']}** — {entry['stars']} stars ({entry['percent']}%)"
-                for idx, entry in enumerate(leaderboard)
-            ),
+            description="\n".join(lines),
             color=discord.Color.gold(),
         )
         await interaction.response.send_message(embed=embed, ephemeral=False)
