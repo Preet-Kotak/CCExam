@@ -188,7 +188,7 @@ class GeneralCog(commands.Cog):
             stars = int(entry["stars"])
             percent = int(entry["percent"])
             lines.append(
-                f"**{idx+1}. {player_name}** — {stars}⭐ {percent}%"
+                f"**{idx+1}. {player_name}** - {stars}⭐ {percent}%"
             )
 
         embed = discord.Embed(
