@@ -116,6 +116,12 @@ async def delete_season(season_id: int) -> None:
     pool = await get_pool()
     await pool.execute("DELETE FROM seasons WHERE id = $1", season_id)
 
+async def get_all_seasons() -> list[asyncpg.Record]:
+    pool = await get_pool()
+    return await pool.fetch(
+        "SELECT month FROM seasons ORDER BY created_at DESC"
+    )
+
 # Scores
 async def get_score(season_id: int, player_id: int) -> Optional[asyncpg.Record]:
     pool = await get_pool()
@@ -220,7 +226,20 @@ async def get_player_all_scores(player_id: int) -> list[asyncpg.Record]:
         """,
         player_id,
     )
-
+async def get_district_leaderboard(season_id: int, district_name: str) -> list[asyncpg.Record]:
+    pool = await get_pool()
+    return await pool.fetch(
+        """
+        SELECT player_id, district_scores->>$1
+        FROM scores
+        WHERE season_id = $2 AND (district_scores->>$1 IS NOT NULL)
+        ORDER BY
+            (district_scores->>$1)::INT DESC,
+            submitted_at ASC
+        """,
+        district_name,
+        season_id,
+    )
 # Bases
 
 async def add_base(

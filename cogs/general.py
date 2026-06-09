@@ -74,6 +74,26 @@ class GeneralCog(commands.Cog):
 
     def _is_examiner(self, member: discord.Member) -> bool:
         return any(r.id == config.CC_EXAMINER_ROLE_ID for r in member.roles)
+    
+    def season_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[int]]:
+        seasons = database.get_all_seasons()
+        choices = [
+            app_commands.Choice(name=season["month"], value=season["id"])
+            for season in seasons
+            if current.lower() in season["month"].lower()
+        ]
+        return choices[:25] 
+    
+    def district_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        districts = config.DISTRICTS
+        choices = [
+            app_commands.Choice(name=district, value=district)
+            for district in districts
+            if current.lower() in district.lower()
+        ]
+        return choices
+    
+
 
     @app_commands.command(name="show_score", description="Show all recorded scores for a player.")
     @app_commands.describe(player="The player to look up")
@@ -121,12 +141,41 @@ class GeneralCog(commands.Cog):
             name="Everyone",
             value=(
                 "`/show_score` — View all recorded scores for a player\n"
+                "`/district_leaderboard` — View the leaderboard for a specific district and season\n"
                 "`/help` — Show this help message\n"
             ),
             inline=False,
         )
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="district_leaderboard", description="Show the leaderboard for a specific district and season.")
+    @app_commands.describe(
+        season="The season to view the leaderboard for",
+        district="The district to view the leaderboard for"
+    )
+    @app_commands.autocomplete(season=season_autocomplete)
+    @app_commands.autocomplete(district=district_autocomplete)  
+    async def district_leaderboard(
+        self, interaction: discord.Interaction, season: str, district: str
+    ) -> None:
+        leaderboard = database.get_district_leaderboard(season, district)
+        if not leaderboard:
+            await interaction.response.send_message(
+                f"No scores found for {district} in {season}.", ephemeral=True
+            )
+            return
+
+        embed = discord.Embed(
+            title=f"{district} Leaderboard — {season}",
+            description="\n".join(
+                f"**{idx+1}. {entry['player_name']}** — {entry['stars']} stars ({entry['percent']}%)"
+                for idx, entry in enumerate(leaderboard)
+            ),
+            color=discord.Color.gold(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        
 
 
 async def setup(bot: commands.Bot) -> None:
