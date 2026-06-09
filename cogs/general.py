@@ -75,7 +75,7 @@ class GeneralCog(commands.Cog):
     def _is_examiner(self, member: discord.Member) -> bool:
         return any(r.id == config.CC_EXAMINER_ROLE_ID for r in member.roles)
     
-    def season_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[int]]:
+    async def season_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[int]]:
         seasons = database.get_all_seasons()
         choices = [
             app_commands.Choice(name=season["month"], value=season["id"])
@@ -84,7 +84,7 @@ class GeneralCog(commands.Cog):
         ]
         return choices[:25] 
     
-    def district_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    async def district_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         districts = config.DISTRICTS
         choices = [
             app_commands.Choice(name=district, value=district)
