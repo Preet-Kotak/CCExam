@@ -214,11 +214,11 @@ class GeneralCog(commands.Cog):
             stars = int(entry["stars"])
             percent = int(entry["percent"])
             lines.append(
-                f"**{idx+1}. {player_name}** - {stars}⭐ {percent}%"
+                f"**#{idx+1} {player_name}** - {stars}⭐ {percent}%"
             )
 
         embed = discord.Embed(
-            title=f"{district} Leaderboard — {season_record['month']}",
+            title=f"{district} Leaderboard | {season_record['month']}",
             description="\n".join(lines),
             color=discord.Color.gold(),
         )
