@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 import database
 import config
-from utils.formatting import build_show_score_embed, sort_districts
+from utils.formatting import build_leaderboard_embed, build_show_score_embed, sort_districts
 
 class ScorePaginator(discord.ui.View):
     def __init__(self, records: list, player: discord.Member | discord.User) -> None:
@@ -141,6 +141,7 @@ class GeneralCog(commands.Cog):
             name="Everyone",
             value=(
                 "`/show_score` — View all recorded scores for a player\n"
+                "`/leaderboard` — View the leaderboard for a season\n"
                 "`/district_leaderboard` — View the leaderboard for a specific district and season\n"
                 "`/help` — Show this help message\n"
             ),
@@ -148,6 +149,31 @@ class GeneralCog(commands.Cog):
         )
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="leaderboard", description="Show the leaderboard for a season.")
+    @app_commands.describe(
+        season="The season to view the leaderboard for"
+    )
+    @app_commands.autocomplete(season=season_autocomplete)
+    async def leaderboard(
+        self, interaction: discord.Interaction, season: str
+    ) -> None:
+        season_record = await database.get_season_by_name(season)
+        if not season_record:
+            await interaction.response.send_message(
+                f"Season '{season}' was not found.", ephemeral=True
+            )
+            return
+
+        scores = await database.get_all_scores(season_record["id"])
+        embed = build_leaderboard_embed(
+            season_name=season_record["month"],
+            scores=scores,
+            guild=interaction.guild,
+            is_active=season_record["is_active"],
+            show_stats=True,
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
     @app_commands.command(name="district_leaderboard", description="Show the leaderboard for a specific district and season.")
     @app_commands.describe(
