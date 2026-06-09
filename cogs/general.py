@@ -75,10 +75,10 @@ class GeneralCog(commands.Cog):
     def _is_examiner(self, member: discord.Member) -> bool:
         return any(r.id == config.CC_EXAMINER_ROLE_ID for r in member.roles)
     
-    async def season_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[int]]:
-        seasons = database.get_all_seasons()
+    async def season_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        seasons = await database.get_all_seasons()
         choices = [
-            app_commands.Choice(name=season["month"], value=season["id"])
+            app_commands.Choice(name=season["month"], value=season["month"])
             for season in seasons
             if current.lower() in season["month"].lower()
         ]
@@ -159,15 +159,22 @@ class GeneralCog(commands.Cog):
     async def district_leaderboard(
         self, interaction: discord.Interaction, season: str, district: str
     ) -> None:
-        leaderboard = database.get_district_leaderboard(season, district)
+        season_record = await database.get_season_by_name(season)
+        if not season_record:
+            await interaction.response.send_message(
+                f"Season '{season}' was not found.", ephemeral=True
+            )
+            return
+
+        leaderboard = await database.get_district_leaderboard(season_record["id"], district)
         if not leaderboard:
             await interaction.response.send_message(
-                f"No scores found for {district} in {season}.", ephemeral=True
+                f"No scores found for {district} in {season_record['month']}.", ephemeral=True
             )
             return
 
         embed = discord.Embed(
-            title=f"{district} Leaderboard — {season}",
+            title=f"{district} Leaderboard — {season_record['month']}",
             description="\n".join(
                 f"**{idx+1}. {entry['player_name']}** — {entry['stars']} stars ({entry['percent']}%)"
                 for idx, entry in enumerate(leaderboard)
