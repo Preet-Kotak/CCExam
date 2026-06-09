@@ -71,7 +71,7 @@ def build_leaderboard_embed(
         rank_display = rank_emojis.get(i, f"#{i}")
         if show_stats:
             lines.append(
-                f"{rank_display} {mention:<{max_mention_len}} - {row['total_stars']}⭐ {fmt_percent(row['total_percent'])} - {row['grade']}"
+                f"{rank_display} {mention:<{max_mention_len}} - {row['total_stars']}⭐ {fmt_percent(row['total_percent'])}% - {row['grade']}"
             )
         else:
             lines.append(
