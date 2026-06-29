@@ -228,18 +228,18 @@ class ExaminerCog(commands.Cog):
         base_map = {b["district_name"]: b for b in bases}
         districts: list[str] = sort_districts(list(season["districts"]))
 
-        lines = [f"**Season: {season['month']}**", ""]
+        await end_channel.send(f"**Season: {season['month']}**")
         for district in districts:
-            lines.append(f"**{district}**")
             if district in base_map:
                 b = base_map[district]
-                lines.append(f"Link: {b['link']}")
-                lines.append(b["screenshot_url"])
+                msg = f"**{district}**\nLink: {b['link']}"
+                if b.get("builder"):
+                    msg += f"\nBuilder: {b['builder']}"
+                msg += f"\n{b['screenshot_url']}"
+                await end_channel.send(msg)
             else:
-                lines.append("_No base recorded_")
-            lines.append("")
+                await end_channel.send(f"**{district}**\n_No base recorded_")
 
-        await end_channel.send("\n".join(lines))
         await interaction.followup.send(
             f"Season **{season['month']}** has ended.", ephemeral=True
         )
@@ -269,6 +269,7 @@ class ExaminerCog(commands.Cog):
     @app_commands.describe(
         link="The CC base layout share link",
         screenshot="Screenshot of the base",
+        builder="Optional name of the base builder",
     )
     @examiner_only()
     async def add_link(
@@ -276,6 +277,7 @@ class ExaminerCog(commands.Cog):
         interaction: discord.Interaction,
         link: str,
         screenshot: discord.Attachment,
+        builder: Optional[str] = None,
     ) -> None:
         await interaction.response.defer(ephemeral=True)
 
@@ -306,7 +308,7 @@ class ExaminerCog(commands.Cog):
             )
             return
 
-        await database.add_base(season["id"], district_name, link, screenshot.url)
+        await database.add_base(season["id"], district_name, link, screenshot.url, builder)
         await interaction.followup.send(
             f"Base for **{district_name}** saved.", ephemeral=True
         )
@@ -333,9 +335,12 @@ class ExaminerCog(commands.Cog):
         for district in districts:
             if district in base_map:
                 b = base_map[district]
+                val = f"[Link]({b['link']})\n[Screenshot]({b['screenshot_url']})"
+                if b.get("builder"):
+                    val += f"\nBuilder: {b['builder']}"
                 embed.add_field(
                     name=district,
-                    value=f"[Link]({b['link']})\n[Screenshot]({b['screenshot_url']})",
+                    value=val,
                     inline=False,
                 )
             else:

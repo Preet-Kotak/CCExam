@@ -46,8 +46,11 @@ async def create_tables() -> None:
                 season_id       INTEGER NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
                 district_name   VARCHAR NOT NULL,
                 link            TEXT    NOT NULL,
-                screenshot_url  TEXT    NOT NULL
+                screenshot_url  TEXT    NOT NULL,
+                builder         VARCHAR
             );
+
+            ALTER TABLE bases ADD COLUMN IF NOT EXISTS builder VARCHAR;
 
             CREATE TABLE IF NOT EXISTS scores (
                 id                  SERIAL PRIMARY KEY,
@@ -248,7 +251,7 @@ async def get_district_leaderboard(season_id: int, district_name: str) -> list[a
 # Bases
 
 async def add_base(
-    season_id: int, district_name: str, link: str, screenshot_url: str
+    season_id: int, district_name: str, link: str, screenshot_url: str, builder: Optional[str] = None
 ) -> None:
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -260,13 +263,14 @@ async def add_base(
             )
             await conn.execute(
                 """
-                INSERT INTO bases (season_id, district_name, link, screenshot_url)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO bases (season_id, district_name, link, screenshot_url, builder)
+                VALUES ($1, $2, $3, $4, $5)
                 """,
                 season_id,
                 district_name,
                 link,
                 screenshot_url,
+                builder,
             )
 
 async def get_bases(season_id: int) -> list[asyncpg.Record]:
