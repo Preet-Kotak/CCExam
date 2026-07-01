@@ -271,14 +271,15 @@ class ExaminerCog(commands.Cog):
         )
 
     # /Share Bases
-    @app_commands.command(name="share_bases", description="Post all bases for the current season to the end-season channel without ending the season.")
+    @app_commands.command(name="share_bases", description="Post all bases for a specific season to the end-season channel.")
+    @app_commands.describe(season_name="Season name, e.g. 'June 2025'")
     @examiner_only()
-    async def share_bases(self, interaction: discord.Interaction) -> None:
+    async def share_bases(self, interaction: discord.Interaction, season_name: str) -> None:
         await interaction.response.defer(ephemeral=True)
 
-        season = await database.get_active_season()
+        season = await database.get_season_by_name(season_name)
         if season is None:
-            await interaction.followup.send("No active season.", ephemeral=True)
+            await interaction.followup.send(f"No season found with name **{season_name}**.", ephemeral=True)
             return
 
         end_channel = interaction.guild.get_channel(config.END_SEASON_CHANNEL_ID)
