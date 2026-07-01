@@ -228,20 +228,107 @@ class ExaminerCog(commands.Cog):
         base_map = {b["district_name"]: b for b in bases}
         districts: list[str] = sort_districts(list(season["districts"]))
 
-        await end_channel.send(f"**Season: {season['month']}**")
-        for district in districts:
-            if district in base_map:
-                b = base_map[district]
-                msg = f"**{district}**\nLink: {b['link']}"
-                if b.get("builder"):
-                    msg += f"\nBuilder: {b['builder']}"
-                msg += f"\n{b['screenshot_url']}"
-                await end_channel.send(msg)
-            else:
-                await end_channel.send(f"**{district}**\n_No base recorded_")
+        import aiohttp
+        import io
+
+        lines = [f"**Season: {season['month']}**", ""]
+        files = []
+
+        async with aiohttp.ClientSession() as session:
+            for district in districts:
+                lines.append(f"**{district}**")
+                if district in base_map:
+                    b = base_map[district]
+                    lines.append(f"Link: <{b['link']}>")
+                    if b.get("builder"):
+                        lines.append(f"Builder: {b['builder']}")
+                    
+                    # Try to fetch and attach the screenshot
+                    try:
+                        async with session.get(b["screenshot_url"]) as resp:
+                            if resp.status == 200:
+                                data = await resp.read()
+                                ext = "png"
+                                if "jpg" in b["screenshot_url"].lower() or "jpeg" in b["screenshot_url"].lower():
+                                    ext = "jpg"
+                                file_name = f"{district.replace(' ', '_').lower()}.{ext}"
+                                files.append(discord.File(io.BytesIO(data), filename=file_name))
+                            else:
+                                lines.append(b["screenshot_url"])
+                    except Exception:
+                        lines.append(b["screenshot_url"])
+                else:
+                    lines.append("_No base recorded_")
+                lines.append("")
+
+        if files:
+            await end_channel.send(content="\n".join(lines), files=files)
+        else:
+            await end_channel.send(content="\n".join(lines))
 
         await interaction.followup.send(
             f"Season **{season['month']}** has ended.", ephemeral=True
+        )
+
+    # /Share Bases
+    @app_commands.command(name="share_bases", description="Post all bases for the current season to the end-season channel without ending the season.")
+    @examiner_only()
+    async def share_bases(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        season = await database.get_active_season()
+        if season is None:
+            await interaction.followup.send("No active season.", ephemeral=True)
+            return
+
+        end_channel = interaction.guild.get_channel(config.END_SEASON_CHANNEL_ID)
+        if end_channel is None:
+            end_channel = await interaction.guild.fetch_channel(config.END_SEASON_CHANNEL_ID)
+
+        bases = await database.get_bases(season["id"])
+        base_map = {b["district_name"]: b for b in bases}
+        districts: list[str] = sort_districts(list(season["districts"]))
+
+        import aiohttp
+        import io
+
+        lines = [f"**Season: {season['month']} (Base Share)**", ""]
+        files = []
+
+        async with aiohttp.ClientSession() as session:
+            for district in districts:
+                lines.append(f"**{district}**")
+                if district in base_map:
+                    b = base_map[district]
+                    lines.append(f"Link: <{b['link']}>")
+                    if b.get("builder"):
+                        lines.append(f"Builder: {b['builder']}")
+                    
+                    # Try to fetch and attach the screenshot
+                    try:
+                        async with session.get(b["screenshot_url"]) as resp:
+                            if resp.status == 200:
+                                data = await resp.read()
+                                ext = "png"
+                                if "jpg" in b["screenshot_url"].lower() or "jpeg" in b["screenshot_url"].lower():
+                                    ext = "jpg"
+                                file_name = f"{district.replace(' ', '_').lower()}.{ext}"
+                                files.append(discord.File(io.BytesIO(data), filename=file_name))
+                            else:
+                                lines.append(b["screenshot_url"])
+                    except Exception:
+                        lines.append(b["screenshot_url"])
+                else:
+                    lines.append("_No base recorded_")
+                lines.append("")
+
+        if files:
+            await end_channel.send(content="\n".join(lines), files=files)
+        else:
+            await end_channel.send(content="\n".join(lines))
+
+        await interaction.followup.send(
+            f"Bases for season **{season['month']}** shared in <#{end_channel.id}>.", ephemeral=True
         )
 
     # /Delete Season
