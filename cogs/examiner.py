@@ -234,22 +234,45 @@ class ExaminerCog(commands.Cog):
         lines = [f"**Season: {season['month']}**", ""]
         files = []
 
+        # Gather screenshot URLs to refresh
+        urls_to_refresh = [base_map[d]["screenshot_url"] for d in districts if d in base_map and base_map[d].get("screenshot_url")]
+        refreshed_map = {}
+
         async with aiohttp.ClientSession() as session:
+            # Refresh expired URLs
+            if urls_to_refresh:
+                try:
+                    async with session.post(
+                        "https://discord.com/api/v9/attachments/refresh-urls",
+                        headers={
+                            "Authorization": f"Bot {self.bot.http.token}",
+                            "Content-Type": "application/json"
+                        },
+                        json={"attachment_urls": urls_to_refresh}
+                    ) as r_resp:
+                        if r_resp.status == 200:
+                            r_data = await r_resp.json()
+                            for item in r_data.get("refreshed_urls", []):
+                                refreshed_map[item["original"]] = item["refreshed"]
+                except Exception:
+                    pass
+
             for district in districts:
                 lines.append(f"**{district}**")
                 if district in base_map:
                     b = base_map[district]
-                    lines.append(f"Link: <{b['link']}>")
+                    lines.append(f"<{b['link']}>")
                     if b.get("builder"):
                         lines.append(f"Builder: {b['builder']}")
                     
                     # Try to fetch and attach the screenshot
                     try:
-                        async with session.get(b["screenshot_url"]) as resp:
+                        target_url = refreshed_map.get(b["screenshot_url"], b["screenshot_url"])
+                        async with session.get(target_url) as resp:
                             if resp.status == 200:
                                 data = await resp.read()
                                 ext = "png"
-                                if "jpg" in b["screenshot_url"].lower() or "jpeg" in b["screenshot_url"].lower():
+                                if "jpg" in target_url.lower() or "jpeg" in target_url.lower():
                                     ext = "jpg"
                                 file_name = f"{district.replace(' ', '_').lower()}.{ext}"
                                 files.append(discord.File(io.BytesIO(data), filename=file_name))
@@ -296,22 +319,45 @@ class ExaminerCog(commands.Cog):
         lines = [f"**Season: {season['month']} (Base Share)**", ""]
         files = []
 
+        # Gather screenshot URLs to refresh
+        urls_to_refresh = [base_map[d]["screenshot_url"] for d in districts if d in base_map and base_map[d].get("screenshot_url")]
+        refreshed_map = {}
+
         async with aiohttp.ClientSession() as session:
+            # Refresh expired URLs
+            if urls_to_refresh:
+                try:
+                    async with session.post(
+                        "https://discord.com/api/v9/attachments/refresh-urls",
+                        headers={
+                            "Authorization": f"Bot {self.bot.http.token}",
+                            "Content-Type": "application/json"
+                        },
+                        json={"attachment_urls": urls_to_refresh}
+                    ) as r_resp:
+                        if r_resp.status == 200:
+                            r_data = await r_resp.json()
+                            for item in r_data.get("refreshed_urls", []):
+                                refreshed_map[item["original"]] = item["refreshed"]
+                except Exception:
+                    pass
+
             for district in districts:
                 lines.append(f"**{district}**")
                 if district in base_map:
                     b = base_map[district]
-                    lines.append(f"Link: <{b['link']}>")
+                    lines.append(f"<{b['link']}>")
                     if b.get("builder"):
                         lines.append(f"Builder: {b['builder']}")
                     
                     # Try to fetch and attach the screenshot
                     try:
-                        async with session.get(b["screenshot_url"]) as resp:
+                        target_url = refreshed_map.get(b["screenshot_url"], b["screenshot_url"])
+                        async with session.get(target_url) as resp:
                             if resp.status == 200:
                                 data = await resp.read()
                                 ext = "png"
-                                if "jpg" in b["screenshot_url"].lower() or "jpeg" in b["screenshot_url"].lower():
+                                if "jpg" in target_url.lower() or "jpeg" in target_url.lower():
                                     ext = "jpg"
                                 file_name = f"{district.replace(' ', '_').lower()}.{ext}"
                                 files.append(discord.File(io.BytesIO(data), filename=file_name))
