@@ -316,7 +316,7 @@ class ExaminerCog(commands.Cog):
         import aiohttp
         import io
 
-        lines = [f"**Season: {season['month']} (Base Share)**", ""]
+        lines = [f"**Season: {season['month']}**", ""]
         files = []
 
         # Gather screenshot URLs to refresh
@@ -463,7 +463,7 @@ class ExaminerCog(commands.Cog):
         districts: list[str] = sort_districts(list(season["districts"]))
 
         embed = discord.Embed(
-            title=f"📋 Bases — {season['month']}",
+            title=f"📋 Bases - {season['month']}",
             color=discord.Color.green(),
         )
         for district in districts:
