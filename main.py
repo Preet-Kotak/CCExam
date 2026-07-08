@@ -26,6 +26,7 @@ class CCExaminerBot(commands.Bot):
         intents.message_content = True
         super().__init__(command_prefix="!", intents=intents, help_command=None)
         self.tree.on_error = self.on_app_command_error
+        self.cached_channels = {}
 
     async def on_app_command_error(
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
@@ -82,11 +83,22 @@ async def main() -> None:
     asyncio.create_task(self_ping())
 
     async with bot:
-        try:
-            await bot.start(config.DISCORD_TOKEN)
-        except Exception as e:
-            log.error(f"Failed to start bot: {e}")
-            raise
+        retry_delay = 60
+        while True:
+            try:
+                await bot.start(config.DISCORD_TOKEN)
+                break
+            except discord.HTTPException as e:
+                if e.status == 429:
+                    log.error(f"429 Too Many Requests on startup. Waiting {retry_delay} seconds before retrying...")
+                    await asyncio.sleep(retry_delay)
+                    retry_delay = min(retry_delay * 2, 600)  # Exponential backoff max 10 mins
+                else:
+                    log.error(f"Failed to start bot: {e}")
+                    raise
+            except Exception as e:
+                log.error(f"Failed to start bot: {e}")
+                raise
 
 
 if __name__ == "__main__":

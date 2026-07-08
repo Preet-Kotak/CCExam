@@ -18,6 +18,16 @@ def examiner_only():
         return True
     return app_commands.check(predicate)
 
+async def get_cached_channel(guild: discord.Guild, channel_id: int, bot: discord.Client):
+    channel = guild.get_channel(channel_id)
+    if channel is None:
+        channel = getattr(bot, "cached_channels", {}).get(channel_id)
+        if channel is None:
+            channel = await guild.fetch_channel(channel_id)
+            if hasattr(bot, "cached_channels"):
+                bot.cached_channels[channel_id] = channel
+    return channel
+
 # Start Modal
 class DistrictSelectView(discord.ui.View):
 
@@ -71,9 +81,7 @@ class DistrictSelectView(discord.ui.View):
 
             season = await database.create_season(self.month, chosen)
 
-            lb_channel = interaction.guild.get_channel(config.LEADERBOARD_CHANNEL_ID)
-            if lb_channel is None:
-                lb_channel = await interaction.guild.fetch_channel(config.LEADERBOARD_CHANNEL_ID)
+            lb_channel = await get_cached_channel(interaction.guild, config.LEADERBOARD_CHANNEL_ID, interaction.client)
             embed = discord.Embed(
                 title=f"🏆 CC Exam Live Leaderboard | {self.month}",
                 description="_No scores submitted yet._",
@@ -220,9 +228,7 @@ class ExaminerCog(commands.Cog):
             season_dict["is_active"] = False
             await lb_cog.update_leaderboard(season_dict)
 
-        end_channel = interaction.guild.get_channel(config.END_SEASON_CHANNEL_ID)
-        if end_channel is None:
-            end_channel = await interaction.guild.fetch_channel(config.END_SEASON_CHANNEL_ID)
+        end_channel = await get_cached_channel(interaction.guild, config.END_SEASON_CHANNEL_ID, self.bot)
 
         bases = await database.get_bases(season["id"])
         base_map = {b["district_name"]: b for b in bases}
@@ -305,9 +311,7 @@ class ExaminerCog(commands.Cog):
             await interaction.followup.send(f"No season found with name **{season_name}**.", ephemeral=True)
             return
 
-        end_channel = interaction.guild.get_channel(config.END_SEASON_CHANNEL_ID)
-        if end_channel is None:
-            end_channel = await interaction.guild.fetch_channel(config.END_SEASON_CHANNEL_ID)
+        end_channel = await get_cached_channel(interaction.guild, config.END_SEASON_CHANNEL_ID, self.bot)
 
         bases = await database.get_bases(season["id"])
         base_map = {b["district_name"]: b for b in bases}
@@ -532,9 +536,7 @@ class ExaminerCog(commands.Cog):
                 grade=totals["grade"],
             )
 
-            results_channel = inter.guild.get_channel(config.SCORE_RESULTS_CHANNEL_ID)
-            if results_channel is None:
-                results_channel = await inter.guild.fetch_channel(config.SCORE_RESULTS_CHANNEL_ID)
+            results_channel = await get_cached_channel(inter.guild, config.SCORE_RESULTS_CHANNEL_ID, self.bot)
             try:
                 score_embed = build_score_embed(
                     player=player,
@@ -619,9 +621,7 @@ class ExaminerCog(commands.Cog):
                 grade=totals["grade"],
             )
 
-            results_channel = inter.guild.get_channel(config.SCORE_RESULTS_CHANNEL_ID)
-            if results_channel is None:
-                results_channel = await inter.guild.fetch_channel(config.SCORE_RESULTS_CHANNEL_ID)
+            results_channel = await get_cached_channel(inter.guild, config.SCORE_RESULTS_CHANNEL_ID, self.bot)
 
             score_embed = build_score_embed(
                 player=player,
